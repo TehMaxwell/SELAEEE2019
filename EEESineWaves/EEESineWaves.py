@@ -14,6 +14,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 import sys
+import numpy as np
 
 #-----------------------------------------------------------------------------------------------------
 #CLASSES
@@ -87,11 +88,43 @@ class mainWindow(QtWidgets.QWidget):
 #Class used for the Main Window Event Handler
 class mainWindowEventHandler():
     #DEFINITIONS
+    #AM Double Sideband Function Variables
+    seconds = 1000
+    secondIntervals = 1000
+    modulationFrequency = 1000.0
+    carrierFrequency = 10000.0
 
     #Constructor, generates a new Main Window
     def __init__(self):
         #Creating an instance of the Main Window
         self.mainWindow = mainWindow()
+
+        #Linking the sliders to their respective actions
+        self.mainWindow.modulationFrequencySlider.valueChanged.connect(self.updateUserSignalGraph)
+        self.mainWindow.carrierFrequencySlider.valueChanged.connect(self.updateUserSignalGraph)
+
+    #Function used to update the Live Graph of the Signal
+    def updateUserSignalGraph(self):
+        #Pulling the current values from the Sliders
+        self.modulationFrequency = self.mainWindow.modulationFrequencySlider.value()
+        self.carrierFrequency = self.mainWindow.carrierFrequencySlider.value()
+
+        print(self.modulationFrequency)
+        print(self.carrierFrequency)
+
+        #Generating the new set of values to be displayed based upon the current wave parameters
+        timeVals = []
+        amplitudeVals = []
+
+        for second in range(0, self.seconds + 1):
+            timeVal = second
+            amplitudeVal = np.sin(self.modulationFrequency * np.pi * 2.0 * second / self.secondIntervals) * np.sin(self.carrierFrequency * np.pi * 2.0 * second / self.secondIntervals)
+
+            timeVals.append(timeVal)
+            amplitudeVals.append(amplitudeVal)
+
+        #Plotting the graph
+        self.mainWindow.graphingCanvas.linePlot(timeVals, amplitudeVals)
 
 #MATPLOTLIB CLASSES
 #Class used to generate the Matplotlib Graph
@@ -112,7 +145,9 @@ class matplotlibGraph(FigureCanvas):
     
     #Method used to plot a line graph of data
     def linePlot(self, dataX, dataY):
+        self.ax.clear()
         self.ax.plot(dataX, dataY)
+        self.draw()
 
 #Class used to generate the Matplotlib Toolbar
 class matplotlibToolbar(NavigationToolbar):
