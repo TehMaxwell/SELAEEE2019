@@ -67,16 +67,16 @@ class mainWindow(QtWidgets.QWidget):
         self.gridLayout.addWidget(self.modulationFrequencySlider, 7, 3, 1, 3)
 
         self.carrierFrequencyNumber = label("0.0")
-        self.gridLayout.addWidget(self.carrierFrequencyNumber, 6, 0, 1, 3)
+        self.gridLayout.addWidget(self.carrierFrequencyNumber, 5, 1, 1, 2)
 
         self.modulationFrequencyNumber = label("0.0")
-        self.gridLayout.addWidget(self.modulationFrequencyNumber, 6, 3, 1, 3)
+        self.gridLayout.addWidget(self.modulationFrequencyNumber, 5, 4, 1, 2)
 
         self.carrierFrequencyLabel = label("Carrier Frequency:")
-        self.gridLayout.addWidget(self.carrierFrequencyLabel, 5, 0, 1, 3)
+        self.gridLayout.addWidget(self.carrierFrequencyLabel, 5, 0, 1, 1)
 
         self.modulationFrequencyLabel = label("Modulation Frequency:")
-        self.gridLayout.addWidget(self.modulationFrequencyLabel, 5, 3, 1, 3)
+        self.gridLayout.addWidget(self.modulationFrequencyLabel, 5, 3, 1, 1)
 
         #Adding the Grid Layout to the Window Layout
         self.setLayout(self.gridLayout)
@@ -89,10 +89,11 @@ class mainWindow(QtWidgets.QWidget):
 class mainWindowEventHandler():
     #DEFINITIONS
     #AM Double Sideband Function Variables
-    seconds = 1000
+    seconds = 1
     secondIntervals = 1000
     modulationFrequency = 1000.0
     carrierFrequency = 10000.0
+    amplitude = 2
 
     #Constructor, generates a new Main Window
     def __init__(self):
@@ -117,11 +118,12 @@ class mainWindowEventHandler():
         amplitudeVals = []
 
         for second in range(0, self.seconds + 1):
-            timeVal = second
-            amplitudeVal = np.sin(self.modulationFrequency * np.pi * 2.0 * second / self.secondIntervals) * np.sin(self.carrierFrequency * np.pi * 2.0 * second / self.secondIntervals)
+            for secondFragment in range(0, self.secondIntervals):
+                timeVal = (second + secondFragment / self.secondIntervals) / 1000.0
+                amplitudeVal = (self.amplitude + np.sin(self.modulationFrequency * 10.0 * np.pi * 2.0 * timeVal)) * np.sin(self.carrierFrequency * 100.0 * np.pi * 2.0 * timeVal)
 
-            timeVals.append(timeVal)
-            amplitudeVals.append(amplitudeVal)
+                timeVals.append(timeVal)
+                amplitudeVals.append(amplitudeVal)
 
         #Plotting the graph
         self.mainWindow.graphingCanvas.linePlot(timeVals, amplitudeVals)
@@ -169,9 +171,9 @@ class slider(QtWidgets.QSlider):
         super(slider, self).__init__(QtCore.Qt.Horizontal)
 
         #Setting the attributes of the Slider
-        self.setMinimum = self.minimumVal
-        self.setMaximum = self.maximumVal
-        self.TickPosition = self.NoTicks
+        self.setMinimum(self.minimumVal)
+        self.setMaximum(self.maximumVal)
+        self.TickPosition(self.NoTicks)
 
 #A widget for GUI text displays
 class label(QtWidgets.QLabel):
