@@ -60,10 +60,10 @@ class mainWindow(QtWidgets.QWidget):
         self.graphingToolbar = matplotlibToolbar(self, self.graphingCanvas)
         self.gridLayout.addWidget(self.graphingToolbar, 0, 0, 1, 6)
 
-        self.carrierFrequencySlider = slider()
+        self.carrierFrequencySlider = slider(1000, 100000)
         self.gridLayout.addWidget(self.carrierFrequencySlider, 7, 0, 1, 3)
 
-        self.modulationFrequencySlider = slider()
+        self.modulationFrequencySlider = slider(1, 2000)
         self.gridLayout.addWidget(self.modulationFrequencySlider, 7, 3, 1, 3)
 
         self.carrierFrequencyNumber = label("0.0")
@@ -110,8 +110,9 @@ class mainWindowEventHandler():
         self.modulationFrequency = self.mainWindow.modulationFrequencySlider.value()
         self.carrierFrequency = self.mainWindow.carrierFrequencySlider.value()
 
-        print(self.modulationFrequency)
-        print(self.carrierFrequency)
+        #Updating the Carrier and Modulation Frequency Label Values
+        self.mainWindow.modulationFrequencyNumber.setText(str(self.modulationFrequency) + "Hz")
+        self.mainWindow.carrierFrequencyNumber.setText(str(self.carrierFrequency) + "Hz")
 
         #Generating the new set of values to be displayed based upon the current wave parameters
         timeVals = []
@@ -120,7 +121,7 @@ class mainWindowEventHandler():
         for second in range(0, self.seconds + 1):
             for secondFragment in range(0, self.secondIntervals):
                 timeVal = (second + secondFragment / self.secondIntervals) / 1000.0
-                amplitudeVal = (self.amplitude + np.sin(self.modulationFrequency * 10.0 * np.pi * 2.0 * timeVal)) * np.sin(self.carrierFrequency * 100.0 * np.pi * 2.0 * timeVal)
+                amplitudeVal = (self.amplitude + np.sin(self.modulationFrequency * np.pi * 2.0 * timeVal)) * np.sin(self.carrierFrequency * np.pi * 2.0 * timeVal)
 
                 timeVals.append(timeVal)
                 amplitudeVals.append(amplitudeVal)
@@ -163,12 +164,16 @@ class matplotlibToolbar(NavigationToolbar):
 class slider(QtWidgets.QSlider):
     #Definitions
     minimumVal = 0
-    maximumVal = 1000
+    maximumVal = 1000000
 
     #Constructor
-    def __init__(self):
+    def __init__(self, minimumSliderVal, maximumSliderVal):
         #Inherting from the QtWidgets Slider Class
         super(slider, self).__init__(QtCore.Qt.Horizontal)
+
+        #Setting Slider Range Variables
+        self.minimumVal = minimumSliderVal
+        self.maximumVal = maximumSliderVal
 
         #Setting the attributes of the Slider
         self.setMinimum(self.minimumVal)
