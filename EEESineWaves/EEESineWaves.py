@@ -61,22 +61,31 @@ class mainWindow(QtWidgets.QWidget):
         self.gridLayout.addWidget(self.graphingToolbar, 0, 0, 1, 6)
 
         self.carrierFrequencySlider = slider(1000, 100000)
-        self.gridLayout.addWidget(self.carrierFrequencySlider, 7, 0, 1, 3)
+        self.gridLayout.addWidget(self.carrierFrequencySlider, 6, 0, 1, 3)
 
-        self.modulationFrequencySlider = slider(1, 2000)
-        self.gridLayout.addWidget(self.modulationFrequencySlider, 7, 3, 1, 3)
+        self.modulationFrequencySlider = slider(0, 2000)
+        self.gridLayout.addWidget(self.modulationFrequencySlider, 6, 3, 1, 3)
+
+        self.amplitudeSlider = slider(0, 10)
+        self.gridLayout.addWidget(self.amplitudeSlider, 8, 0, 1, 3)
 
         self.carrierFrequencyNumber = label("0.0")
         self.gridLayout.addWidget(self.carrierFrequencyNumber, 5, 1, 1, 2)
 
         self.modulationFrequencyNumber = label("0.0")
         self.gridLayout.addWidget(self.modulationFrequencyNumber, 5, 4, 1, 2)
+        
+        self.amplitudeNumber = label("0.0")
+        self.gridLayout.addWidget(self.amplitudeNumber, 7, 1, 1, 2)
 
         self.carrierFrequencyLabel = label("Carrier Frequency:")
         self.gridLayout.addWidget(self.carrierFrequencyLabel, 5, 0, 1, 1)
 
         self.modulationFrequencyLabel = label("Modulation Frequency:")
         self.gridLayout.addWidget(self.modulationFrequencyLabel, 5, 3, 1, 1)
+
+        self.amplitudeLabel = label("Amplitude:")
+        self.gridLayout.addWidget(self.amplitudeLabel, 7, 0, 1, 1)
 
         #Adding the Grid Layout to the Window Layout
         self.setLayout(self.gridLayout)
@@ -95,6 +104,11 @@ class mainWindowEventHandler():
     carrierFrequency = 10000.0
     amplitude = 2
 
+    #Target Signal Variables
+    targetModulationFrequency = 0.0 
+    targetCarrierFrequency = 0.0
+    targetAmplitude = 0.0
+
     #Constructor, generates a new Main Window
     def __init__(self):
         #Creating an instance of the Main Window
@@ -103,17 +117,45 @@ class mainWindowEventHandler():
         #Linking the sliders to their respective actions
         self.mainWindow.modulationFrequencySlider.valueChanged.connect(self.updateUserSignalGraph)
         self.mainWindow.carrierFrequencySlider.valueChanged.connect(self.updateUserSignalGraph)
+        self.mainWindow.amplitudeSlider.valueChanged.connect(self.updateUserSignalGraph)
+
+        #Plotting the first randomly generated target graph
+        self.updateTargetSignalGraph()
+        self.updateUserSignalGraph()
 
     #Function used to update the Live Graph of the Signal
     def updateUserSignalGraph(self):
         #Pulling the current values from the Sliders
         self.modulationFrequency = self.mainWindow.modulationFrequencySlider.value()
         self.carrierFrequency = self.mainWindow.carrierFrequencySlider.value()
+        self.amplitude = self.mainWindow.amplitudeSlider.value()
 
         #Updating the Carrier and Modulation Frequency Label Values
         self.mainWindow.modulationFrequencyNumber.setText(str(self.modulationFrequency) + "Hz")
         self.mainWindow.carrierFrequencyNumber.setText(str(self.carrierFrequency) + "Hz")
+        self.mainWindow.amplitudeNumber.setText(str(self.amplitude) + "V")
 
+        #Generating the new set of values to be displayed based upon the current wave parameters
+        timeVals, amplitudeVals = self.generateAMDoubleSideband(self.amplitude, self.modulationFrequency, self.carrierFrequency)
+
+        #Plotting the graph
+        self.mainWindow.graphingCanvas.userSignalPlot(timeVals, amplitudeVals)
+
+    #Function used to update the graph of the Target Signal
+    def updateTargetSignalGraph(self):
+        #Updating the Target Values
+        self.targetCarrierFrequency = float(np.random.randint(1000, 1000001))
+        self.targetModulationFrequency = float(np.random.randint(0, 2001))
+        self.targetAmplitude = float(np.random.randint(0, 11))
+
+        #Generating the new set of values for the AM Double Sideband Signal
+        timeVals, amplitudeVals = self.generateAMDoubleSideband(self.targetAmplitude, self.modulationFrequency, self.carrierFrequency)
+
+        #Plotting the new Target Graph
+        self.mainWindow.graphingCanvas.userTargetPlot(timeVals, amplitudeVals)
+
+    #Function used to generate an AM Double Side Band Signal
+    def generateAMDoubleSideband(self, amplitude, modulationFrequency, carrierFrequency):
         #Generating the new set of values to be displayed based upon the current wave parameters
         timeVals = []
         amplitudeVals = []
@@ -121,18 +163,25 @@ class mainWindowEventHandler():
         for second in range(0, self.seconds + 1):
             for secondFragment in range(0, self.secondIntervals):
                 timeVal = (second + secondFragment / self.secondIntervals) / 1000.0
-                amplitudeVal = (self.amplitude + np.sin(self.modulationFrequency * np.pi * 2.0 * timeVal)) * np.sin(self.carrierFrequency * np.pi * 2.0 * timeVal)
+                amplitudeVal = (amplitude + np.sin(modulationFrequency * np.pi * 2.0 * timeVal)) * np.sin(carrierFrequency * np.pi * 2.0 * timeVal)
 
                 timeVals.append(timeVal)
                 amplitudeVals.append(amplitudeVal)
 
-        #Plotting the graph
-        self.mainWindow.graphingCanvas.linePlot(timeVals, amplitudeVals)
+        return timeVals, amplitudeVals
 
 #MATPLOTLIB CLASSES
 #Class used to generate the Matplotlib Graph
 class matplotlibGraph(FigureCanvas):
     #DEFINITIONS
+    #Graph Attributes
+    yAxisMin = -10.0
+    yAxisMax = 10.0
+    gridEnabled = True
+
+    #Data Line Attributes
+    userGraphLineColour = "g"
+    targetGraphLineColour = "r"
 
     #Constructor, generates a new matplotlib graph viewer and toolbar
     def __init__(self):
@@ -146,10 +195,30 @@ class matplotlibGraph(FigureCanvas):
         self.ax = self.figure.add_subplot(211)
         self.ax1 = self.figure.add_subplot(212)
     
-    #Method used to plot a line graph of data
-    def linePlot(self, dataX, dataY):
+    #Method used to plot a line graph of the user signal data
+    def userSignalPlot(self, dataX, dataY):
+        #Clearing Graph and Plotting New Data
         self.ax.clear()
-        self.ax.plot(dataX, dataY)
+        self.ax.plot(dataX, dataY, self.userGraphLineColour)
+
+        #Setting the Plot Parameters
+        self.ax.set_ylim(self.yAxisMin, self.yAxisMax)
+        self.ax.grid(self.gridEnabled)
+
+        #Showing new graph
+        self.draw()
+
+    #Method used to plot a line graph of the target signal data
+    def userTargetPlot(self, dataX, dataY):
+        #Clearing Graph and Plotting New Data
+        self.ax1.clear()
+        self.ax1.plot(dataX, dataY, self.targetGraphLineColour)
+
+        #Setting the Plot Parameters
+        self.ax1.set_ylim(self.yAxisMin, self.yAxisMax)
+        self.ax1.grid(self.gridEnabled)
+
+        #Showing the new Graph
         self.draw()
 
 #Class used to generate the Matplotlib Toolbar
