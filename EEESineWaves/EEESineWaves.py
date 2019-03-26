@@ -49,7 +49,8 @@ class mainWindow(QtWidgets.QWidget):
 
         #Setting the window parameters
         self.setWindowTitle(self.windowTitle)
-        self.resize(self.windowWidth, self.windowHeight)
+        #self.resize(self.windowWidth, self.windowHeight)
+        self.showFullScreen()
 
         #Building the Window Layout and adding Widgets
         self.gridLayout = QtWidgets.QGridLayout()
@@ -114,6 +115,15 @@ class mainWindowEventHandler():
     targetModulationFrequency = 0.0 
     targetCarrierFrequency = 0.0
     targetAmplitude = 0.0
+    carrierFrequencyRange = 20000.0
+    modulationFrequencyRange = 200.0
+
+    #Game Variables
+    signalStrength = 0
+    maxSignalStrength = 2
+    gameFinishTitle = "Connection Established"
+    gameFinishMessage = "Congratulations, you have correctly Modulated the communication signals sent from Earth. " +\
+        "The lunar base colonists can now communicate back to Earth and relay vital information about their mission!"
 
     #Constructor, generates a new Main Window
     def __init__(self):
@@ -129,12 +139,19 @@ class mainWindowEventHandler():
         self.updateTargetSignalGraph()
         self.updateUserSignalGraph()
 
+        #Updating the Signal Strength
+        self.mainWindow.connectionStrengthNumber.setText("0/" + str(self.maxSignalStrength))
+
     #Function used to update the Live Graph of the Signal
     def updateUserSignalGraph(self):
         #Pulling the current values from the Sliders
         self.modulationFrequency = self.mainWindow.modulationFrequencySlider.value()
         self.carrierFrequency = self.mainWindow.carrierFrequencySlider.value()
         self.amplitude = self.mainWindow.amplitudeSlider.value()
+
+        print(self.modulationFrequency)
+        print(self.carrierFrequency)
+        print(self.amplitude)
 
         #Updating the Carrier and Modulation Frequency Label Values
         self.mainWindow.modulationFrequencyNumber.setText(str(self.modulationFrequency) + "Hz")
@@ -147,15 +164,22 @@ class mainWindowEventHandler():
         #Plotting the graph
         self.mainWindow.graphingCanvas.userSignalPlot(timeVals, amplitudeVals)
 
+        #Checking if the user has matched the graphs correctly
+        self.checkGraphsMatched()
+
     #Function used to update the graph of the Target Signal
     def updateTargetSignalGraph(self):
         #Updating the Target Values
-        self.targetCarrierFrequency = float(np.random.randint(1000, 1000001))
-        self.targetModulationFrequency = float(np.random.randint(0, 2001))
-        self.targetAmplitude = float(np.random.randint(0, 11))
+        self.targetCarrierFrequency = np.random.randint(1000, 100001)
+        self.targetModulationFrequency = np.random.randint(0, 2001)
+        self.targetAmplitude = np.random.randint(0, 11)
+
+        print(self.targetCarrierFrequency)
+        print(self.targetModulationFrequency)
+        print(self.targetAmplitude)
 
         #Generating the new set of values for the AM Double Sideband Signal
-        timeVals, amplitudeVals = self.generateAMDoubleSideband(self.targetAmplitude, self.modulationFrequency, self.carrierFrequency)
+        timeVals, amplitudeVals = self.generateAMDoubleSideband(self.targetAmplitude, self.targetModulationFrequency, self.targetCarrierFrequency)
 
         #Plotting the new Target Graph
         self.mainWindow.graphingCanvas.userTargetPlot(timeVals, amplitudeVals)
@@ -175,6 +199,27 @@ class mainWindowEventHandler():
                 amplitudeVals.append(amplitudeVal)
 
         return timeVals, amplitudeVals
+    
+    #Function used to handle the matching of the target graph to the user signal graph and signal strength meter
+    def checkGraphsMatched(self):
+        #Checking if the graph parameters are within range
+        if (self.amplitude == self.targetAmplitude):
+            if (self.carrierFrequency >= self.targetCarrierFrequency - self.carrierFrequencyRange and self.carrierFrequency <= self.targetCarrierFrequency + self.carrierFrequencyRange):
+                if(self.modulationFrequency >= self.targetModulationFrequency - self.modulationFrequencyRange and self.modulationFrequency <= self.targetModulationFrequency + self.modulationFrequencyRange):
+                    self.signalStrength += 1
+                    self.updateTargetSignalGraph()
+                    self.mainWindow.connectionStrengthNumber.setText(str(self.signalStrength) + "/" + str(self.maxSignalStrength))
+
+        #Checking if the game has finished
+        if (self.signalStrength == self.maxSignalStrength):
+            #Showing the game finished message box
+            QtWidgets.QMessageBox.about(self.mainWindow, self.gameFinishTitle, self.gameFinishMessage)
+
+            #Resetting the game signal strength
+            self.signalStrength = 0
+            self.mainWindow.connectionStrengthNumber.setText(str(self.signalStrength) + "/" + str(self.maxSignalStrength))
+            self.updateTargetSignalGraph()
+
 
 #MATPLOTLIB CLASSES
 #Class used to generate the Matplotlib Graph
@@ -183,6 +228,8 @@ class matplotlibGraph(FigureCanvas):
     #Graph Attributes
     yAxisMin = -10.0
     yAxisMax = 10.0
+    xAxisMin = 0.0
+    xAxisMax = 0.002
     gridEnabled = True
 
     #Data Line Attributes
@@ -208,6 +255,7 @@ class matplotlibGraph(FigureCanvas):
         self.ax.plot(dataX, dataY, self.userGraphLineColour)
 
         #Setting the Plot Parameters
+        self.ax.set_xlim(self.xAxisMin, self.xAxisMax)
         self.ax.set_ylim(self.yAxisMin, self.yAxisMax)
         self.ax.grid(self.gridEnabled)
 
@@ -221,6 +269,7 @@ class matplotlibGraph(FigureCanvas):
         self.ax1.plot(dataX, dataY, self.targetGraphLineColour)
 
         #Setting the Plot Parameters
+        self.ax1.set_xlim(self.xAxisMin, self.xAxisMax)
         self.ax1.set_ylim(self.yAxisMin, self.yAxisMax)
         self.ax1.grid(self.gridEnabled)
 
