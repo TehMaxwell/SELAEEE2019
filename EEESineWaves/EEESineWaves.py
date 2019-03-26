@@ -77,6 +77,9 @@ class mainWindow(QtWidgets.QWidget):
         
         self.amplitudeNumber = label("0.0")
         self.gridLayout.addWidget(self.amplitudeNumber, 7, 1, 1, 2)
+        
+        self.connectionStrengthNumber = label("-")
+        self.gridLayout.addWidget(self.connectionStrengthNumber, 7, 4, 1, 1)
 
         self.carrierFrequencyLabel = label("Carrier Frequency:")
         self.gridLayout.addWidget(self.carrierFrequencyLabel, 5, 0, 1, 1)
@@ -86,6 +89,9 @@ class mainWindow(QtWidgets.QWidget):
 
         self.amplitudeLabel = label("Amplitude:")
         self.gridLayout.addWidget(self.amplitudeLabel, 7, 0, 1, 1)
+
+        self.connectionStrengthLabel = label("Connection Strength:")
+        self.gridLayout.addWidget(self.connectionStrengthLabel, 7, 3, 1, 1)
 
         #Adding the Grid Layout to the Window Layout
         self.setLayout(self.gridLayout)

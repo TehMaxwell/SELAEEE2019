@@ -17,7 +17,7 @@
  
  //DEFINITIONS
  //LED Definitions
- #define NUM_LEDS 100
+ #define NUM_LEDS 110
  #define LED_PIN 2
  #define LED_TYPE    WS2811
  #define COLOR_ORDER GRB
@@ -28,8 +28,8 @@
  #define Y_AXIS_SERVO 6
  #define X_AXIS_MIN 78
  #define X_AXIS_MAX 105
- #define Y_AXIS_MIN 112
- #define Y_AXIS_MAX 140
+ #define Y_AXIS_MIN 120
+ #define Y_AXIS_MAX 150
 
  //Button Definitions
  #define START 11
@@ -41,7 +41,7 @@
 
  //Game Definitions
  #define TARGET_X_VAL 80
- #define TARGET_Y_VAL 135
+ #define TARGET_Y_VAL 141
 
  //VARIABLES
  //Servo Variables
